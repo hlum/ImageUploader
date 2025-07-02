@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Postリクエストのみを許可
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['status' => 'error', 'message' => 'Method not allowed']);
+    echo json_encode(value: ['status' => 'error', 'message' => 'Method not allowed']);
     exit;
 }
 
@@ -53,7 +53,7 @@ if (!hash_equals(API_KEY, $client_api_key)) {
     exit;
 }
 
-// Create directory if it doesn't exist
+// Dir作成
 if (!file_exists($imgDir)) {
     if (!mkdir($imgDir, 0755, true)) {
         http_response_code(500);
@@ -62,7 +62,7 @@ if (!file_exists($imgDir)) {
     }
 }
 
-// Get and validate image data
+// 写真のデータチェック
 $rawData = file_get_contents('php://input');
 if (empty($rawData)) {
     http_response_code(400);
@@ -70,14 +70,14 @@ if (empty($rawData)) {
     exit;
 }
 
-// Check file size
+// ファイルサイズのチェック
 if (strlen($rawData) > $maxFileSize) {
     http_response_code(413);
     echo json_encode(['status' => 'error', 'message' => 'File size exceeds limit']);
     exit;
 }
 
-// Validate image format
+// ファイルフォーマットの検証
 $finfo = new finfo(FILEINFO_MIME_TYPE);
 $mimeType = $finfo->buffer($rawData);
 
@@ -87,7 +87,7 @@ if (!in_array($mimeType, $allowedMimeTypes)) {
     exit;
 }
 
-// Additional image validation using getimagesizefromstring
+// イメージサイズの検証
 $imageInfo = getimagesizefromstring($rawData);
 if ($imageInfo === false) {
     http_response_code(400);
@@ -95,7 +95,7 @@ if ($imageInfo === false) {
     exit;
 }
 
-// Determine file extension based on mime type
+// ファイルタイプ
 $extensions = [
     'image/jpeg' => 'jpg',
     'image/png' => 'png',
@@ -104,18 +104,18 @@ $extensions = [
 ];
 $extension = $extensions[$mimeType] ?? 'jpg';
 
-// Generate secure filename
+// ファイル名の生成
 $imgName = bin2hex(random_bytes(16)) . '.' . $extension;
 $imgPath = $imgDir . $imgName;
 
-// Check if file already exists (unlikely but good practice)
+// ファイルの競合チェック
 if (file_exists($imgPath)) {
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'File generation conflict']);
     exit;
 }
 
-// Save the image with proper error handling
+// 保存
 $bytesWritten = file_put_contents($imgPath, $rawData, LOCK_EX);
 if ($bytesWritten === false || $bytesWritten !== strlen($rawData)) {
     http_response_code(500);
@@ -123,10 +123,10 @@ if ($bytesWritten === false || $bytesWritten !== strlen($rawData)) {
     exit;
 }
 
-// Set proper file permissions
-chmod($imgPath, 0644);
+// ファイルの権限設定
+chmod($imgPath, 0755);
 
-// Generate image URL
+// 写真のURL生成
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $imgURL = $protocol . '://' . $_SERVER['HTTP_HOST'] . '/ImgAPI/' . $imgPath;
 
@@ -135,12 +135,6 @@ echo json_encode([
     'status' => 'success',
     'message' => 'Image uploaded successfully',
     'url' => $imgURL,
-    'filename' => $imgName,
     'size' => strlen($rawData),
-    'type' => $mimeType,
-    'dimensions' => [
-        'width' => $imageInfo[0],
-        'height' => $imageInfo[1]
-    ]
+    'type' => $mimeType
 ]);
-?>
