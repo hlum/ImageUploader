@@ -124,7 +124,7 @@ if ($bytesWritten === false || $bytesWritten !== strlen($rawData)) {
 }
 
 // ファイルの権限設定
-chmod($imgPath, 0755);
+chmod($imgPath, 0644); // Readable by everyone, writable by owner
 
 // 写真のURL生成
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
