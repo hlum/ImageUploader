@@ -4,6 +4,8 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
+
+imap_timeout(0);
 //Preflight requests　の処理
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(response_code: 200);
@@ -124,7 +126,7 @@ if ($bytesWritten === false || $bytesWritten !== strlen($rawData)) {
 }
 
 // ファイルの権限設定
-chmod($imgPath, 0644); // Readable by everyone, writable by owner
+chmod($imgPath, 0755); // Readable by everyone, writable by owner
 
 // 写真のURL生成
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
